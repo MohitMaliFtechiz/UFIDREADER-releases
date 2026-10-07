@@ -97,6 +97,7 @@ adb shell pm path com.saurav.uhfreader       # /system/priv-app/IDTech/IDTech.ap
 | Recovery account | `superadmin`, for a forgotten admin password; its password is given out separately |
 | Web console | Off (Settings → Web) |
 | MQTT | Off (Settings → MQTT) |
+| Wi-Fi | Built-in AP6212 module: **2.4 GHz only** (5 GHz-only networks don't appear). Settings → Network & internet → Wi-Fi. |
 | Permissions for other apps | Any app that declares `UHF_READ` / `UHF_WRITE` can read and write tags. Region, power and antenna changes are limited to privileged system apps. |
 
 ## 4. Install the phone app
@@ -138,6 +139,7 @@ random one.
 | A3 | Sign in with a wrong password | "Operator name or password is not correct" |
 | A4 | First sign-in with `admin@123` | Forced to choose a new password; `short` is refused (8+ characters) |
 | A5 | **Connect** | No dialog. Shows Connected; Reader information is filled in. `adb shell getprop vendor.uhf.active_device` shows the port. |
+| A6 | Settings → Wi-Fi → on; join a 2.4 GHz network | Networks listed; connects and gets an IP. `adb shell ip addr show wlan0` shows it. |
 
 ### B. Inventory and reader settings
 
