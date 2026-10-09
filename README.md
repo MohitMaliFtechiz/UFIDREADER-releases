@@ -83,20 +83,24 @@ adb shell getprop ro.build.fingerprint      # the new build
 adb shell pm path com.saurav.uhfreader       # /system/priv-app/IDTech/IDTech.apk
 ```
 
+The console looks and works like the web console: the same sign-in screens, the same seven
+tabs and the same Setting sub-tabs.
+
 1. On the board, open **ID TECH** and sign in with **`admin` / `admin@123`**.
-2. Choose a new password: at least 8 characters, not the default. The same account signs in to
+2. **Set a New Password:** at least 8 characters, not the default. The same account signs in to
    the web console.
-3. Tap **Connect**. The console connects straight to the reader and finds its port on its own.
-4. **Optional: turn on the web console.** In the console, go to **Settings → Web** and turn on the
-   switch. The card lists the addresses to open from a PC on the same network:
-   `http://idtech.local:8080` and `http://<board-ip>:8080`.
+3. **Get Connected:** tap **Connect**. The console finds the reader's port on its own. (**Skip
+   (Continue Offline)** opens the console without a reader.)
+4. **Optional: turn on the web console.** Go to **Setting → Web** and turn on the switch. The card
+   lists the addresses to open from a PC on the same network: `http://idtech.local:8080` and
+   `http://<board-ip>:8080`.
 
 | Default after flashing | Value |
 |---|---|
 | Console sign-in | `admin` / `admin@123`, forced change at first sign-in |
 | Recovery account | `superadmin`, for a forgotten admin password; its password is given out separately |
-| Web console | Off (Settings → Web) |
-| MQTT | Off (Settings → MQTT) |
+| Web console | Off (Setting → Web) |
+| MQTT | Off (Setting → MQTT) |
 | Wi-Fi | Built-in AP6212 module: **2.4 GHz only** (5 GHz-only networks don't appear). Settings → Network & internet → Wi-Fi. |
 | Permissions for other apps | Any app that declares `UHF_READ` / `UHF_WRITE` can read and write tags. Region, power and antenna changes are limited to privileged system apps. |
 
@@ -137,8 +141,8 @@ random one.
 | A1 | Look at the launcher | ID TECH icon showing the full logo ("IDENTITY AND SECURITY") |
 | A2 | `adb shell pm list packages \| grep -E "saurav\|idtech"` | Only `com.saurav.uhfreader` |
 | A3 | Sign in with a wrong password | "Operator name or password is not correct" |
-| A4 | First sign-in with `admin@123` | Forced to choose a new password; `short` is refused (8+ characters) |
-| A5 | **Connect** | No dialog. Shows Connected; Reader information is filled in. `adb shell getprop vendor.uhf.active_device` shows the port. |
+| A4 | First sign-in with `admin@123` | "Set a New Password" screen; `short` is refused (8+ characters) |
+| A5 | Get Connected → **Connect** | The console opens; the header pill shows **Connected**. Setting → Reader Config → Reader Information is filled in. `adb shell getprop vendor.uhf.active_device` shows the port. |
 | A6 | Settings → Wi-Fi → on; join a 2.4 GHz network | Networks listed; connects and gets an IP. `adb shell ip addr show wlan0` shows it. |
 
 ### B. Inventory and reader settings
@@ -146,38 +150,38 @@ random one.
 | # | Do | Expect |
 |---|---|---|
 | B1 | Inventory → **Start**, wait 30 s, then **Stop** | Tags appear, counts and rate rise, the screen stays responsive |
-| B2 | Search part of an EPC; then **Export CSV** | List filters; the CSV starts with `EPC,Reads,RSSI,Antenna,TID` |
-| B3 | Settings → RF & Band → set power **0** → Set; Disconnect, Connect | A warning that RF power is too low to read tags; "Maximum power 30" |
-| B4 | Set power **20** → Set; Single scan | Accepted; tags read again |
-| B5 | Settings → RF & Band → change region → Set band (confirm) | Applied, no "Permission denied"; Reader information shows the new band. **Set your country's region back.** |
-| B6 | Settings → Reader Config: Q5, S1, pause 10, filter 1000 → Apply; force-stop the app (`adb shell am force-stop com.saurav.uhfreader`), sign in, reopen | Values kept. Restore Q7, S0, 0, 0 afterwards. |
+| B2 | Search part of an EPC; then **Export CSV** | List filters; the CSV starts with `No.,EPC ID,Len,Times,LastSeen,RSSI,Antenna` |
+| B3 | Setting → Antenna → slider to **0** → Set Power; ⓘ menu → Back to Connection → Connect | A warning that RF power is too low to read tags |
+| B4 | Slider to **20** → Set Power; Inventory → Single Scan | Accepted; tags read again |
+| B5 | Setting → RF & Band → choose a band → Set Band (confirm) → Get Band | Applied, no "Permission denied"; Get Band shows the new band. **Set your country's region back.** |
+| B6 | Setting → Reader Config: Q 05, Session 01, Read Pause 2*5ms, Filter 1*1sec → Set Inventory Parameters; reboot the board, sign in, reopen | Values kept. Restore Q 07, Session 00, 0, 0 afterwards. |
 
 ### C. Tag memory (one isolated tag)
 
 | # | Do | Expect |
 |---|---|---|
-| C1 | Inventory → tap the tag's row (it becomes the target) → Tag Memory → bank **EPC**, address **2**, length = EPC words → Read | The data **equals the tag's EPC** |
-| C2 | Bank **User**, address 0, write `11223344` (Verify on), then read it back | Write OK; the read-back matches |
-| C3 | Target an EPC that is **not** in the field, then Read | "no tag answered …" (not an empty success) |
-| C4 | Write EPC: a new EPC of the same length → Inventory | **Only that tag** now shows the new EPC. Write the original back. |
-| C5 | Tag Auditor → Read on the targeted tag | CRC, PC, EPC (= target) and TID filled. Locked banks show a reason, not all blank. |
+| C1 | Inventory → tap the tag's row → Tag Memory → **Tag selected in Inventory page** → bank **EPC**, Start Byte **04**, Tag Length = EPC bytes (12 for a 96-bit EPC) → Read | Data (Hex) **equals the tag's EPC** |
+| C2 | Bank **USER**, Start Byte 00, Tag Length 4, Write Data `11223344` (Verify writes on) → Write, then Read | "Data written."; the read-back matches |
+| C3 | Select a tag on Inventory, take it out of the field, then Read | "no tag answered …" (not an empty success) |
+| C4 | Write EPC card: a new EPC of the same length → Write → Inventory | **Only that tag** now shows the new EPC. Write the original back. |
+| C5 | Tag Auditor → **Tag selected in inventory page** → Read | Banks A-D filled: CRC, PC, EPC (= target), TID. A locked bank shows the reason in brackets. |
 
 ### D. Destructive tests (disposable tag only)
 
 | # | Do | Expect |
 |---|---|---|
-| D1 | Set a kill password (non-zero), then **Kill tag** (confirm) | The tag never shows in Inventory again (re-scan 30 s) |
-| D2 | On another disposable tag: lock the EPC bank (state "locked", with an access password), then write without the password | Write refused, with a "memory locked" or tag-error message |
+| D1 | Tag Memory → **Tag Kill–Lock & Block Erase**: Read Type **Kill Password**, Write Password non-zero → Write; then Tag Kill with that password → Kill Tag (confirm) | The tag never shows in Inventory again (re-scan 30 s) |
+| D2 | On another disposable tag: set an access password, then Protect: **EPC Memory**, **Writeable with Password Protection** → Set Protect; then write without the password | Write refused, with a "memory locked" or tag-error message |
 
-### E. Web console (Settings → Web on)
+### E. Web console (Setting → Web on)
 
 | # | Do | Expect |
 |---|---|---|
 | E1 | Open `http://<board-ip>:8080` | ReadersHub sign-in page |
 | E2 | Sign in with the board's admin account | Signs in. A new password set here also works in the console, and the other way round. |
 | E3 | Get Connected → Start → Inventory → Start | Live tags. Stopping on the web does not stop the console's own scan. |
-| E4 | Setting → Reader Config: change Q → Set; in the console, open Settings → Reader Config | Same Q in both |
-| E5 | Settings → Web → switch off | The page stops loading. Switch it on again, and it survives a reboot. |
+| E4 | Setting → Reader Config: change Q → Set; in the console, open Setting → Reader Config | Same Q in both |
+| E5 | Setting → Web → switch off | The page stops loading. Switch it on again, and it survives a reboot. |
 | E6 | Five wrong passwords in a row | Locked out for 60 s ("too many attempts") |
 
 ### F. MQTT (optional: needs a broker on the same network)
@@ -187,7 +191,7 @@ in its config) and watch it with `mosquitto_sub -h <pc-ip> -t 'readershub/#' -v`
 
 | # | Do | Expect |
 |---|---|---|
-| F1 | Console → Settings → MQTT: host = PC IP, port 1883 → **Test connection** | "Test passed: Connected to …". Port 1 gives "Test failed: connection refused …". |
+| F1 | Console → Setting → MQTT: host = PC IP, port 1883 → **Test connection** | "Test passed: Connected to …". Port 1 gives "Test failed: connection refused …". |
 | F2 | Switch MQTT on | A retained `…/status {"state":"online"}`, then `…/tags` messages without pressing Start |
 | F3 | Reboot the board, don't open the app | Publishing resumes on its own |
 
@@ -222,7 +226,7 @@ image instead (section 2).
 | Board doesn't boot after flashing | Enter Maskrom (hold the board's Maskrom key while connecting power) and flash again |
 | Console: "no reader connected" | Check the reader's cable and power, then **Connect** again |
 | Tags read, but writes fail with "no tag answered" | Isolate the tag (section 5) and target it from the Inventory row |
-| Web console doesn't open | Is Settings → Web on? Is the PC on the same network? Try the IP address instead of `idtech.local`. |
+| Web console doesn't open | Is Setting → Web on? Is the PC on the same network? Try the IP address instead of `idtech.local`. |
 | Tool logs | `~/upgrade_tool/log/` (or `/root/upgrade_tool/log/` when run with `sudo`) |
 
 Please report problems with the step number, what you expected and what happened, plus
