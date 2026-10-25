@@ -9,12 +9,18 @@ from **[Releases](../../releases)**. This page covers installing and testing it 
 | `GB_RK3576_14_<date>_<time>.img.md5` | Checksum for the image |
 | `upgrade_tool_v2.30_for_linux.zip` | Rockchip's Linux tool for flashing the image |
 | `IDTech-console-<version>.apk` | The ID TECH console app, the same build as inside the image (for updating a board without reflashing) |
-| `ReadersHub-phone-<version>.apk` | The ReadersHub phone/tablet app, which controls a board over Wi-Fi |
+| `ReadersHub-phone-<version>.apk` | The ReadersHub phone/tablet app, which controls a board over Wi-Fi (unchanged since v2026.10.09: take it from that release) |
+| `UFIDREADER-ota-<build time>.zip` | OTA update package for the same build. Boards running v2026.10.25 or later find and install newer ones themselves (Firmware → Automatic updates); you can also install it from Firmware → Check now. |
+| `uhf-sdk-<version>.aar` | The UHF SDK library for your own Android apps |
+| `uhf-sdk-sample-app-src-<version>.zip` | A complete sample app using the SDK (Android Studio / Gradle project) |
+| `uhf-sdk-sample-<version>-debug.apk` | The sample app, built (runs in demo mode on any phone, or on the board) |
+| `uhf-sdk-docs-<version>.zip` | SDK API reference (Javadoc), SDK README and sample README |
 
 **Contents:** [1. What you need](#1-what-you-need) · [2. Flash the board](#2-flash-the-board) ·
 [3. First start](#3-first-start) · [4. Install the phone app](#4-install-the-phone-app) ·
-[5. Test](#5-test) · [6. Updating only the console app](#6-updating-only-the-console-app) ·
-[7. Troubleshooting](#7-troubleshooting)
+[5. Test](#5-test) · [6. Firmware updates (OTA)](#6-firmware-updates-ota) ·
+[7. Updating only the console app](#7-updating-only-the-console-app) ·
+[8. SDK and sample app](#8-sdk-and-sample-app) · [9. Troubleshooting](#9-troubleshooting)
 
 ---
 
@@ -175,14 +181,36 @@ random one.
 
 ### E. Web console (Setting → Web on)
 
+From v2026.10.25 the web console follows the ReadersHub design: a sidebar (collapse it with «),
+status chips at the top (Reader, MQTT, Kafka, Webhook, Online) and these pages.
+
 | # | Do | Expect |
 |---|---|---|
-| E1 | Open `http://<board-ip>:8080` | ReadersHub sign-in page |
+| E1 | Open `http://<board-ip>:8080` (or `http://idtech.local:8080`) | ReadersHub sign-in page |
 | E2 | Sign in with the board's admin account | Signs in. A new password set here also works in the console, and the other way round. |
-| E3 | Get Connected → Start → Inventory → Start | Live tags. Stopping on the web does not stop the console's own scan. |
-| E4 | Setting → Reader Config: change Q → Set; in the console, open Setting → Reader Config | Same Q in both |
-| E5 | Setting → Web → switch off | The page stops loading. Switch it on again, and it survives a reboot. |
-| E6 | Five wrong passwords in a row | Locked out for 60 s ("too many attempts") |
+| E3 | Get Connected → Serial Port → Start | **Device Info**: firmware, region, port. Continue → the console; the **Reader** chip turns green. |
+| E4 | Inventory → Start | Live tags. Stopping on the web does not stop the console's own scan. |
+| E5 | Settings → Antenna → Number of Antennas: **4** | "Antenna ports enabled: 1, 2, 3, 4". Tags read on every connected antenna; Tag Streaming's **Port** column shows 1-4. |
+| E6 | Settings → Antenna: move one antenna's slider, Set Power | "RF power set: A1 … A4 dBm" (each antenna has its own power) |
+| E7 | Settings → Antenna → Measure (Antenna Return Loss) | A value in dB for each connected antenna, "-" for an empty port |
+| E8 | Tag Streaming → Begin feed | Unique EPCs, reads per second, per-tag RSSI min/avg/max and port; the download button saves a CSV |
+| E9 | Settings → Saved profiles → New profile: 2 ports, different powers → Apply changes → Run | "Currently running" shows it; Stop ends it |
+| E10 | Settings → Reader Config: change Q → Set; in the console, open Setting → Reader Config | Same Q in both |
+| E11 | Event Reporting → Webhook: endpoint URL of any HTTP server that accepts POST (your own, or a request-inspector service) → Send test request; then turn delivery on → Apply | "Test passed: endpoint answered HTTP 200"; then tag batches arrive as JSON and the **Webhook** chip turns green |
+| E12 | Network → Network Interfaces | eth0/wlan0, link, IPv4/IPv6, speed, MAC |
+| E13 | Network → NTP | The time servers, with stratum/reach as the board polls them |
+| E14 | Network → HTTP/HTTPS → turn HTTPS on → Apply | `https://<board-ip>:8443` opens (self-signed certificate: the browser warns once) |
+| E15 | Network → HTTP/HTTPS → Create token; `curl -H "Authorization: Bearer <token>" http://<board-ip>:8080/api/status` | JSON status. After Revoke, the same command gives 401. |
+| E16 | Debug Log → type `21` → Send | "Status 0x00 (ok): …" (the reader's information reply) |
+| E17 | Setting → Web → switch off | The page stops loading. Switch it on again, and it survives a reboot. |
+| E18 | Five wrong passwords in a row | Locked out for 60 s ("too many attempts") |
+
+Not yet available: connecting to a network (TCP) reader - this board's reader is on its serial port.
+
+**Please check on the board and report back** (these could not be tested without hardware):
+joining Wi-Fi and setting a static Ethernet address (Network → Add connection; changing the
+address can drop your browser - reconnect at the new address), changing NTP servers and the
+hostname, Kafka delivery to a real broker, and a firmware update (section 6).
 
 ### F. MQTT (optional: needs a broker on the same network)
 
@@ -204,7 +232,19 @@ in its config) and watch it with `mosquitto_sub -h <pc-ip> -t 'readershub/#' -v`
 | G3 | Read and Write a tag's User memory | Works; bad hex is refused |
 | G4 | Config: change power | The console shows the same power |
 
-## 6. Updating only the console app
+## 6. Firmware updates (OTA)
+
+Boards running **v2026.10.25 or later** update themselves from this page:
+
+- **Firmware → Check now** looks for a release with a newer `UFIDREADER-ota-<build time>.zip`.
+  **Install update** downloads it, checks it against the release page's SHA-256, verifies its
+  signature and restarts into recovery to apply it (a few minutes; the board is offline meanwhile).
+- **Automatic updates** on: the board checks once a day and installs what it finds.
+- Boards on an older image have no updater: flash this image once (section 2); later releases can
+  then arrive over the air.
+- The web console must be switched on (Setting → Web) for updates to be checked.
+
+## 7. Updating only the console app
 
 A board already running an image from these releases can take a newer console without
 reflashing:
@@ -216,7 +256,18 @@ adb install -r IDTech-console-<version>.apk     # keeps the app's data
 If it fails with a signature error, the board's image was signed with a different key: flash the
 image instead (section 2).
 
-## 7. Troubleshooting
+## 8. SDK and sample app
+
+`uhf-sdk-<version>.aar` is the library for your own apps on the board. Unzip
+`uhf-sdk-sample-app-src-<version>.zip` and open the folder in Android Studio (it builds against the
+AAR in `libs/`), or install the ready-built sample: `adb install uhf-sdk-sample-<version>-debug.apk`.
+The sample shows opening a session, reader information, live inventory (antenna ports 1-4), tag
+memory read/write, power/band/antenna settings and raw commands; its **Demo** switch runs it
+without a reader. The API reference is in `uhf-sdk-docs-<version>.zip` (`javadoc/index.html`).
+Version 2.1.0 adds `transactRaw` (raw reader commands; needs the platform-signed `UHF_RAW`
+permission, so ordinary apps get a clear "permission denied").
+
+## 9. Troubleshooting
 
 | Problem | Fix |
 |---|---|
