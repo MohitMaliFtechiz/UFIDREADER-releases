@@ -15,12 +15,14 @@ from **[Releases](../../releases)**. This page covers installing and testing it 
 | `uhf-sdk-sample-app-src-<version>.zip` | A complete sample app using the SDK (Android Studio / Gradle project) |
 | `uhf-sdk-sample-<version>-debug.apk` | The sample app, built (runs in demo mode on any phone, or on the board) |
 | `uhf-sdk-docs-<version>.zip` | SDK API reference (Javadoc), SDK README and sample README |
+| `uhf-reader-demo-<version>.apk` | **UHF Reader Demo**: the full demo app (Scan, Radar, Locate, Read/Write, Lock, Kill, Block, Settings, Info), built on the SDK |
+| `uhf-reader-demo-<version>-src.zip` | Its source: an Android Studio / Gradle project that builds against the SDK AAR it contains |
 
 **Contents:** [1. What you need](#1-what-you-need) · [2. Flash the board](#2-flash-the-board) ·
 [3. First start](#3-first-start) · [4. Install the phone app](#4-install-the-phone-app) ·
 [5. Test](#5-test) · [6. Firmware updates (OTA)](#6-firmware-updates-ota) ·
 [7. Updating only the console app](#7-updating-only-the-console-app) ·
-[8. SDK and sample app](#8-sdk-and-sample-app) · [9. Troubleshooting](#9-troubleshooting)
+[8. SDK, demo and sample app](#8-sdk-demo-and-sample-app) · [9. Troubleshooting](#9-troubleshooting)
 
 ---
 
@@ -256,7 +258,31 @@ adb install -r IDTech-console-<version>.apk     # keeps the app's data
 If it fails with a signature error, the board's image was signed with a different key: flash the
 image instead (section 2).
 
-## 8. SDK and sample app
+## 8. SDK, demo and sample app
+
+**UHF Reader Demo** is the app to show the reader with and to start your own app from. Install
+it on the board with `adb install -r uhf-reader-demo-<version>.apk`; it opens the reader by
+itself (on a phone without a reader it runs in **Demo mode** with simulated tags). Its tabs:
+
+| Tab | What it does |
+|---|---|
+| Scan | Single scan or continuous reading: EPC, TID, count, RSSI, antenna, tags / reads / reads per second, EPC filter, export to CSV (Downloads). Tap a tag to target it on the other tabs. |
+| Radar | All tags in range as dots, nearer the centre the stronger the signal. |
+| Locate | Finds one tag: a signal meter and beeps that speed up as you get closer. |
+| Read/Write | Read and write any memory bank, change the EPC. |
+| Lock | Lock, unlock or permanently lock memory; set the access and kill passwords. |
+| Kill | Kill a tag (asks first). |
+| Block | Block write and block erase. |
+| Settings | Scan parameters (Q, session, target, scan time), beep, verify writes; RF power, region and antenna ports. |
+| Info | Firmware, band, frequencies, power limits, antenna ports. |
+
+Changing RF power, region and antenna ports needs the `UHF_CONFIGURE` permission, which only
+platform-signed or preinstalled apps get: an installed demo shows the current values and greys
+out those Set buttons (use the web console to change them). Its source,
+`uhf-reader-demo-<version>-src.zip`, opens in Android Studio; every SDK call is marked `// SDK`
+and `README.md` maps each screen to the calls it makes.
+
+The smaller **sample app** below shows the same SDK in Kotlin, one feature per panel.
 
 `uhf-sdk-<version>.aar` is the library for your own apps on the board. Unzip
 `uhf-sdk-sample-app-src-<version>.zip` and open the folder in Android Studio (it builds against the
