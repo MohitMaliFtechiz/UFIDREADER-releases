@@ -9,12 +9,10 @@ from **[Releases](../../releases)**. This page covers installing and testing it 
 | `GB_RK3576_14_<date>_<time>.img.md5` | Checksum for the image |
 | `upgrade_tool_v2.30_for_linux.zip` | Rockchip's Linux tool for flashing the image |
 | `IDTech-console-<version>.apk` | The ID TECH console app, the same build as inside the image (for updating a board without reflashing) |
-| `ReadersHub-phone-<version>.apk` | The ReadersHub phone/tablet app, which controls a board over Wi-Fi (unchanged since v2026.10.09: take it from that release) |
+| `ReadersHub-phone-<version>.apk` | The ReadersHub phone/tablet app, which controls a board over Wi-Fi |
 | `UFIDREADER-ota-<build time>.zip` | OTA update package for the same build. Boards running v2026.10.25 or later find and install newer ones themselves (Firmware → Automatic updates); you can also install it from Firmware → Check now. |
 | `uhf-sdk-<version>.aar` | The UHF SDK library for your own Android apps |
-| `uhf-sdk-sample-app-src-<version>.zip` | A complete sample app using the SDK (Android Studio / Gradle project) |
-| `uhf-sdk-sample-<version>-debug.apk` | The sample app, built (runs in demo mode on any phone, or on the board) |
-| `uhf-sdk-docs-<version>.zip` | SDK API reference (Javadoc), SDK README and sample README |
+| `uhf-sdk-docs-<version>.zip` | SDK API reference (Javadoc) and SDK README |
 | `uhf-reader-demo-<version>.apk` | **UHF Reader Demo**: the full demo app (Scan, Radar, Locate, Read/Write, Lock, Kill, Block, Settings, Info), built on the SDK |
 | `uhf-reader-demo-<version>-src.zip` | Its source: an Android Studio / Gradle project that builds against the SDK AAR it contains |
 
@@ -22,7 +20,7 @@ from **[Releases](../../releases)**. This page covers installing and testing it 
 [3. First start](#3-first-start) · [4. Install the phone app](#4-install-the-phone-app) ·
 [5. Test](#5-test) · [6. Firmware updates (OTA)](#6-firmware-updates-ota) ·
 [7. Updating only the console app](#7-updating-only-the-console-app) ·
-[8. SDK, demo and sample app](#8-sdk-demo-and-sample-app) · [9. Troubleshooting](#9-troubleshooting)
+[8. SDK and demo app](#8-sdk-and-demo-app) · [9. Troubleshooting](#9-troubleshooting)
 
 ---
 
@@ -258,7 +256,7 @@ adb install -r IDTech-console-<version>.apk     # keeps the app's data
 If it fails with a signature error, the board's image was signed with a different key: flash the
 image instead (section 2).
 
-## 8. SDK, demo and sample app
+## 8. SDK and demo app
 
 **UHF Reader Demo** is the app to show the reader with and to start your own app from. Install
 it on the board with `adb install -r uhf-reader-demo-<version>.apk`; it opens the reader by
@@ -282,16 +280,10 @@ out those Set buttons (use the web console to change them). Its source,
 `uhf-reader-demo-<version>-src.zip`, opens in Android Studio; every SDK call is marked `// SDK`
 and `README.md` maps each screen to the calls it makes.
 
-The smaller **sample app** below shows the same SDK in Kotlin, one feature per panel.
-
-`uhf-sdk-<version>.aar` is the library for your own apps on the board. Unzip
-`uhf-sdk-sample-app-src-<version>.zip` and open the folder in Android Studio (it builds against the
-AAR in `libs/`), or install the ready-built sample: `adb install uhf-sdk-sample-<version>-debug.apk`.
-The sample shows opening a session, reader information, live inventory (antenna ports 1-4), tag
-memory read/write, power/band/antenna settings and raw commands; its **Demo** switch runs it
-without a reader. The API reference is in `uhf-sdk-docs-<version>.zip` (`javadoc/index.html`).
-Version 2.1.0 adds `transactRaw` (raw reader commands; needs the platform-signed `UHF_RAW`
-permission, so ordinary apps get a clear "permission denied").
+`uhf-sdk-<version>.aar` is the library for your own apps on the board (the demo's source zip
+contains it in `libs/`). The API reference is in `uhf-sdk-docs-<version>.zip`
+(`javadoc/index.html`). Version 2.1.0 adds `transactRaw` (raw reader commands; needs the
+platform-signed `UHF_RAW` permission, so ordinary apps get a clear "permission denied").
 
 ## 9. Troubleshooting
 
